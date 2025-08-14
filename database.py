@@ -10,12 +10,13 @@ db_pool = None
 # === Foydalanuvchilar jadvali ===
 async def init_db():
     global db_pool
-    # Railway, Render va boshqa hostlarda DATABASE_URL bo‘ladi
-    db_url = os.getenv("DATABASE_URL")
-    if not db_url:
-        raise ValueError("DATABASE_URL environment variable is not set.")
-
-    db_pool = await asyncpg.create_pool(dsn=db_url)
+    db_pool = await asyncpg.create_pool(
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASS"),
+        database=os.getenv("DB_NAME"),
+        host=os.getenv("DB_HOST"),
+        port=int(os.getenv("DB_PORT"))
+    )
 
     async with db_pool.acquire() as conn:
         # Foydalanuvchilar
@@ -52,13 +53,14 @@ async def init_db():
             );
         """)
 
-        # Dastlabki adminlar
+        # Dastlabki adminlar (o'z IDlaringizni qo'shing)
         default_admins = [6486825926, 7711928526]
         for admin_id in default_admins:
             await conn.execute(
                 "INSERT INTO admins (user_id) VALUES ($1) ON CONFLICT DO NOTHING",
                 admin_id
             )
+
 
 # === Foydalanuvchi qo'shish ===
 async def add_user(user_id):
